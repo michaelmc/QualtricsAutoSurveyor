@@ -1,12 +1,9 @@
 import time
 import csv
 import json
-import urllib
 import random
+import requests
 import sys
-# import os
-# import datetime
-# import httplib
 
 def main():
     '''Reads a list of individuals and sends a survey to a selection of them.'''
@@ -25,7 +22,8 @@ def main():
     #
     # First, create a new Qualtrics panel based on the current date and time.
     #
-    panel_response = json.load(urllib.urlopen(url_builder('new_panel', user, token, None, library_id)))
+    params = { 'Request': 'createPanel', 'User': user, 'Token': token, 'Format': 'JSON', 'Version': '2.0', 'LibraryID': panel_library_id, 'Name': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) }
+    panel_response = requests.get('https://survey.qualtrics.com/WRAPI/ControlPanel/api.php', params=params).json()
     log_string = logger('create', panel_response, log_string)
     if panel_response['Meta']['Status'] == 'Error':
         return error_handler("Error creating panel.")
@@ -62,21 +60,21 @@ def main():
         remedy_number = name[3].strip()
         remedy_number = remedy_number[len(remedy_number)-6:len(remedy_number)]
         summary = name[4].strip()
-        data_ref = urllib.quote("Ticket " + remedy_number + ": " + summary,"")
+        data_ref = "Ticket " + remedy_number + ": " + summary
         
         if email not in recipients:
             recipients.append(email)
             recipient_names.append(first_name + " " + last_name + ", " + email.strip().replace('%40', '@') + ", " + data_ref)
             n += 1
-            url = url_builder('add_recipient', user, token, panel_id, library_id, first_name=first_name, last_name=last_name, email=email, remedy_number=data_ref)
-            person_response = json.load(urllib.urlopen(url))
+            params = { 'Request': 'addRecipient', 'User': user, 'Token': token, 'Format': 'JSON', 'Version': '2.0', 'LibraryID': panel_library_id, 'PanelID': panel_id, 'FirstName': first_name, 'LastName': last_name, 'Email': email, 'ExternalDataRef': data_ref }
+            panel_response = requests.get('https://survey.qualtrics.com/WRAPI/ControlPanel/api.php', params=params).json()
             log_string = logger('add', person_response, log_string)
             
     #
     # Send the survey via Qualtrics.
     #
-    send_survey_URL = url_builder('send', user, token, panel_id, library_id, survey_id=survey_id, from_email=from_email, from_name=from_name, subject=subject, message_id=message_id, message_library_id=library_id)
-    survey_response = json.load(urllib.urlopen(send_survey_URL))
+    params = {'Request': 'sendSurveyToPanel', 'User': user, 'Token': token, 'Format': 'JSON', 'Version': '2.0', 'SurveyID': survey_id, 'SendDate': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.mktime(time.localtime())-7200)), 'FromEmail': from_email, 'FromName': from_name, 'Subject': subject, 'MessageID': message_id, 'MessageLibraryID': library_id, 'PanelID': panel_id, 'PanelLibraryID': library_id, 'LinkType': 'Individual' }
+    survey_response = requests.get('https://survey.qualtrics.com/WRAPI/ControlPanel/api.php', params=params).json()
     log_string = logger('send', survey_response, log_string)
     if survey_response['Meta']['Status'] == 'Error':
         return error_handler('Error sending survey.')
@@ -108,16 +106,16 @@ def write_log(log_string):
     log_file.write(log_string)
     log_file.close()
 
-def url_builder(request_type, user, token, panel_id, panel_library_id, survey_id=None, from_email=None, from_name=None, subject=None, message_id=None, message_library_id=None, first_name=None, last_name=None, email=None, remedy_number=None):
+def param_builder(request_type, user, token, panel_id, panel_library_id, survey_id=None, from_email=None, from_name=None, subject=None, message_id=None, message_library_id=None, first_name=None, last_name=None, email=None, remedy_number=None):
     if request_type == 'send':
-        url = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=sendSurveyToPanel&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&SurveyID=" + survey_id + "&SendDate=" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.mktime(time.localtime())-7200)) + "&FromEmail=" + from_email + "&FromName=" + from_name + "&Subject=" + subject + "&MessageID=" + message_id + "&MessageLibraryID=" + message_library_id + "&PanelID=" + panel_id + "&PanelLibraryID=" + panel_library_id + "&LinkType=Individual"
+        params = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=sendSurveyToPanel&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&SurveyID=" + survey_id + "&SendDate=" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.mktime(time.localtime())-7200)) + "&FromEmail=" + from_email + "&FromName=" + from_name + "&Subject=" + subject + "&MessageID=" + message_id + "&MessageLibraryID=" + message_library_id + "&PanelID=" + panel_id + "&PanelLibraryID=" + panel_library_id + "&LinkType=Individual"
     elif request_type == 'new_panel':
-        url = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=createPanel&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&LibraryID=" + panel_library_id + "&Name=" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        params = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=createPanel&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&LibraryID=" + panel_library_id + "&Name=" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     elif request_type == 'add_recipient':
-        url = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=addRecipient&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&LibraryID=" + panel_library_id + "&PanelID=" + panel_id + "&FirstName=" + first_name + "&LastName=" + last_name + "&Email=" + email + "&ExternalDataRef=" + remedy_number
+        params = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=addRecipient&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&LibraryID=" + panel_library_id + "&PanelID=" + panel_id + "&FirstName=" + first_name + "&LastName=" + last_name + "&Email=" + email + "&ExternalDataRef=" + remedy_number
     elif request_type == 'delete_panel':
-        url = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=deletePanel&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&LibraryID=" + panel_library_id + "&PanelID=" + panel_id
-    return url if url else error_handler('Error building URL.')
+        params = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=deletePanel&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&LibraryID=" + panel_library_id + "&PanelID=" + panel_id
+    return params if params else error_handler('Error building URL.')
 
 if __name__ == '__main__':
     main()
