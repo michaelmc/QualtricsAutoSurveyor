@@ -38,6 +38,15 @@ def main():
     names_array = []
     map((lambda x: names_array.append(x)),names)
     names_array = names_array[1:len(names_array)]
+    if (len(names_array) == 0):
+        params = { 'Request': 'deletePanel', 'User': user, 'Token': token, 'Format': 'JSON', 'Version': '2.0', 'LibraryID': library_id, 'PanelID': panel_id } 
+        delete_response = requests.get('https://survey.qualtrics.com/WRAPI/ControlPanel/api.php', params=params)
+        if delete_response['Meta']['Status'] == 'Error':
+            return error_handler("Error deleting panel.")
+        write_log(log_string)
+        source.close()
+        sys.exit()
+        
     random.shuffle(names_array)
     target = len(names_array) / 4
     if len(names_array) % 4 >= 2:
@@ -78,7 +87,6 @@ def main():
     log_string = logger('send', survey_response, log_string)
     if survey_response['Meta']['Status'] == 'Error':
         return error_handler('Error sending survey.')
-    print "Survey sent"
     
     write_log(log_string)
     source.close()
