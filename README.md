@@ -14,3 +14,4 @@ This can be completely automated if you have some scheduled mechanism to update 
 As-is, the script wants the .csv to be of the form:
 
 <code>\<first name\>,\<last name\>,\<email address\>,\<unique identifier\>,\<other information\></code>
+
