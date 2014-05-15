@@ -106,16 +106,5 @@ def write_log(log_string):
     log_file.write(log_string)
     log_file.close()
 
-def param_builder(request_type, user, token, panel_id, panel_library_id, survey_id=None, from_email=None, from_name=None, subject=None, message_id=None, message_library_id=None, first_name=None, last_name=None, email=None, remedy_number=None):
-    if request_type == 'send':
-        params = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=sendSurveyToPanel&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&SurveyID=" + survey_id + "&SendDate=" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.mktime(time.localtime())-7200)) + "&FromEmail=" + from_email + "&FromName=" + from_name + "&Subject=" + subject + "&MessageID=" + message_id + "&MessageLibraryID=" + message_library_id + "&PanelID=" + panel_id + "&PanelLibraryID=" + panel_library_id + "&LinkType=Individual"
-    elif request_type == 'new_panel':
-        params = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=createPanel&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&LibraryID=" + panel_library_id + "&Name=" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    elif request_type == 'add_recipient':
-        params = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=addRecipient&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&LibraryID=" + panel_library_id + "&PanelID=" + panel_id + "&FirstName=" + first_name + "&LastName=" + last_name + "&Email=" + email + "&ExternalDataRef=" + remedy_number
-    elif request_type == 'delete_panel':
-        params = "https://survey.qualtrics.com/WRAPI/ControlPanel/api.php?Request=deletePanel&User=" + user + "&Token=" + token + "&Format=JSON&Version=2.0&LibraryID=" + panel_library_id + "&PanelID=" + panel_id
-    return params if params else error_handler('Error building URL.')
-
 if __name__ == '__main__':
     main()
